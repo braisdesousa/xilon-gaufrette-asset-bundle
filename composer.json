@@ -1,0 +1,29 @@
+{
+    "name" : "xilon/gaufrette-assets-bundle",
+    "description" : "Gaufrette Assets",
+    "type" : "symfony-bundle",
+    "authors" : [{
+        "name" : "Xilon",
+        "email" : "brais.desousa@xilon.es"
+    }],
+    "keywords" : [
+        "Symfony2 Xilon Gaufrette Assets Bundle"
+    ],
+    "license" : [
+        "MIT"
+    ],
+    "require" : {
+    },
+    "autoload" : {
+        "psr-0" : {
+            "Xilon\\GaufretteAssetsBundle" : ""
+        }
+    },
+    "target-dir" : "Xilon/GaufretteAssetsBundle",
+    "repositories" : [],
+    "extra" : {
+    "branch-alias" : {
+            "dev-master" : "master"
+        }
+    }
+}
