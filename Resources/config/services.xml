@@ -1,0 +1,28 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <!--
+    <parameters>
+        <parameter key="xilon_gaufrette_assets.example.class">Xilon\GaufretteAssetsBundle\Example</parameter>
+    </parameters>
+
+    <services>
+        <service id="xilon_gaufrette_assets.example" class="%xilon_gaufrette_assets.example.class%">
+            <argument type="service" id="service_id" />
+            <argument>plain_value</argument>
+            <argument>%parameter_name%</argument>
+        </service>
+    </services>
+    -->
+    <services>
+        <service id="xilon.gaufrette_assets.extension" class="Xilon\GaufretteAssetsBundle\Twig\GaufretteAssetsExtension">
+            <argument type="service" id="opencloud.object_store" />
+            <argument>%rackespace_container_asset_name%</argument>
+            <argument>%kernel.environment%</argument>
+            <tag name="twig.extension" />
+        </service>
+    </services>
+</container>
