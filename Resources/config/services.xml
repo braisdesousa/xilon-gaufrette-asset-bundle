@@ -19,8 +19,7 @@
     -->
     <services>
         <service id="xilon.gaufrette_assets.extension" class="Xilon\GaufretteAssetsBundle\Twig\GaufretteAssetsExtension">
-            <argument type="service" id="opencloud.object_store" />
-            <argument>%rackespace_container_asset_name%</argument>
+            <argument type="service" id="gaufrette.assets_filesystem"/>
             <argument>%kernel.environment%</argument>
             <tag name="twig.extension" />
         </service>

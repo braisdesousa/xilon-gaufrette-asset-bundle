@@ -9,19 +9,16 @@
 namespace Xilon\GaufretteAssetsBundle\Twig;
 
 
-use OpenCloud\ObjectStore\Service;
+use Gaufrette\Filesystem;
+use Xilon\GaufretteBundle\Service\GaufretteBaseUrlService;
 
 class GaufretteAssetsExtension extends \Twig_Extension {
 
 
-    private $openCloudObjectStore;
-    private $assetContainer;
-    private $container;
+    private $filesystem;
     private $environment;
-    public function __construct(Service $openCloudObjectStore, $assetContainer,$environment){
-        $this->openCloudObjectStore=$openCloudObjectStore;
-        $this->assetContainer=$assetContainer;
-        $this->container=$openCloudObjectStore->getContainer($assetContainer);
+    public function __construct(Filesystem $filesystem,$environment){
+        $this->filesystem=$filesystem;
         $this->environment=$environment;
     }
     public function getFilters()
@@ -35,8 +32,7 @@ class GaufretteAssetsExtension extends \Twig_Extension {
         if(!$this->isProd()){
             return $path;
         }
-        $cdnUri=$this->container->getCdn()->getCdnUri();
-
+        $cdnUri=GaufretteBaseUrlService::getGaufretteBaseUrl($this->filesystem);
         return sprintf("%s/%s",$cdnUri,$path);
     }
     public function isProd(){
