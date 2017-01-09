@@ -9,6 +9,7 @@ use OpenCloud\ObjectStore\Resource\Container;
 use OpenCloud\ObjectStore\Service;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -18,23 +19,34 @@ use Symfony\Component\Finder\SplFileInfo;
 
 class AssetsCommand extends ContainerAwareCommand
 {
+
+    const REGEX = "/.*\.(coffee|mustache|nuspec|yml|markdown|txt|json|sh|js|php|md|html|less|scss|py|rst|JS|MD|HTML|LESS|SCSS|PY|RST)$/";
     protected function configure(){
 
         $this
-            ->setName("bds:assets:copy")
-            ->setDescription('Copy Assets to Gaufrette');
+            ->setName("xilon:assets:copy")
+            ->setDescription('Copy Assets to Gaufrette')
+            ->addArgument("folder",InputArgument::OPTIONAL,"Folder to Update")
+            ->addOption("delete-all","d", InputOption::VALUE_NONE,"Delete All Before Write");
     }
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $folderName=$input->getArgument("folder");
+        $deleteAll=$input->getOption("delete-all");
         /** @var Service $objectStore */
 
-        $output->writeln("<info> Deleting All Asets</info>");
+
         $objectStore=$this->getContainer()->get("opencloud.object_store");
         $container=$objectStore->getContainer($this->getContainer()->getParameter("rackespace_container_asset_name"));
-        $container->deleteAllObjects();
+
+        if($deleteAll){
+            $output->writeln("<info> Deleting All Asets</info>");
+            $container->deleteAllObjects();
+        }
+
 
         $output->writeln("<info> Starting Copy</info>");
-        $this->uploadFiles($container,$output);
+        $this->uploadFiles($container,$folderName,$output);
         $output->writeln("<info> Uploading </info><comment> FONT </comment><info> Files </info>");
         $this->uploadFontFiles($container,"ttf",$output);
         $this->uploadFontFiles($container,"eot",$output);
@@ -43,10 +55,11 @@ class AssetsCommand extends ContainerAwareCommand
         $this->uploadFontFiles($container,"svg",$output);
         $output->writeln("<info> Ending Copy</info>");
     }
-    public function uploadFiles(Container $container, OutputInterface $output){
+    public function uploadFiles(Container $container,$folder="", OutputInterface $output){
         $finder= new Finder();
-
-        $finder->files()->in($this->getContainer()->getParameter("kernel.root_dir")."/../web/bundles")
+        $path=sprintf("%s/../web/bundles%s",$this->getContainer()->getParameter("kernel.root_dir"),$folder);
+        $uploadPath=sprintf("web/bundles%s",$folder);
+        $finder->files()->in($path)
             ->notName("*.ttf")
             ->notName("*.eot")
             ->notName("*.otf")
@@ -54,39 +67,29 @@ class AssetsCommand extends ContainerAwareCommand
             ->notName("*.svg");
         $x=0;
         $files=[];
-        foreach($finder as $file){
-            if($x<100){
-                $files[]=["name"=>sprintf("bundles/%s",$file->getRelativePathname()), "path"=>$file->getRealPath()];
-                $x++;
-            }
-
-            if($x>=100) {
-                $uploaded = false;
-                $tryes = 0;
-                while (((!$uploaded) && ($tryes < 5))){
-                    try {
-                        $tryes++;
-                        $container->uploadObjects($files);
-                        $uploaded = true;
-                    } catch (\Exception $e) {
-                        if($tryes>=5){
-                            $output->writeln(sprintf("<error>Guzzle Returned ServerErrorResponseException - Cancelled Upload </error>"));
-                            throw $e;
-                        }
-                        $output->writeln(sprintf("<error>Guzzle ServerErrorResponseException We will try again in 5 seconds</error>"));
-                        sleep(5);
-                    }
-                }
-                $files=[];
-                $output->writeln(sprintf("<comment>100 files uploaded</comment>"));
-                $x=0;
-            }
-
+        /** @var SplFileInfo $file */
+        foreach($finder as $file) {
+            $filePath=sprintf("%s/../web/bundles%s/%s",$this->getContainer()->getParameter("kernel.root_dir"),$folder,$file->getRelativePathname());
+            $files[] = ["name" => $file->getFilename(), "path" =>$filePath ];
         }
-        if($x!=0){
-            $container->uploadObjects($files);
-            $output->writeln(sprintf("<comment>%s files uploaded</comment>",$x));
-            $x=0;
+        $fileChunks=array_chunk($files,100);
+        foreach($fileChunks as $chunk) {
+            $uploaded = false;
+            $tryes = 0;
+            while (((!$uploaded) && ($tryes < 5))){
+                try {
+                    $tryes++;
+                    $container->uploadObjects($chunk);
+                    $uploaded = true;
+                } catch (\Exception $e) {
+                    if($tryes>=5){
+                        $output->writeln(sprintf("<error>Guzzle Returned ServerErrorResponseException - Cancelled Upload </error>"));
+                        throw $e;
+                    }
+                    $output->writeln(sprintf("<error>Guzzle ServerErrorResponseException We will try again in 5 seconds</error>"));
+                    sleep(5);
+                }
+            }
         }
     }
     public function uploadFontFiles(Container $container,$fileType,$output)
